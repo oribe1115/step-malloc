@@ -209,6 +209,25 @@ void simple_free(void* ptr) {
 //
 // Your job is to invent a smarter malloc algorithm here :)
 
+void my_add_to_free_list(simple_metadata_t* metadata){
+  assert(!metadata->next);
+  // simple_heap.free_headと連結できそうならする
+  void* ptr = metadata + 1;
+  simple_metadata_t* metadata_tail = (simple_metadata_t*)((char*)ptr + metadata->size);
+
+  // 連結できないとき
+  if (metadata_tail != simple_heap.free_head){
+    metadata->next = simple_heap.free_head;
+    simple_heap.free_head = metadata;
+    return;
+  }
+
+  simple_metadata_t* head = simple_heap.free_head;
+  metadata->size += head->size + sizeof(simple_metadata_t);
+  metadata->next = head->next;
+  simple_heap.free_head = metadata;
+}
+
 // This is called only once at the beginning of each challenge.
 void my_initialize() {
   simple_heap.free_head = &simple_heap.dummy;
@@ -260,7 +279,7 @@ void* my_malloc(size_t size) {
     metadata->size = buffer_size - sizeof(simple_metadata_t);
     metadata->next = NULL;
     // Add the memory region to the free list.
-    simple_add_to_free_list(metadata);
+    my_add_to_free_list(metadata);
     // Now, try simple_malloc() again. This should succeed.
     return simple_malloc(size);
   }
@@ -288,7 +307,7 @@ void* my_malloc(size_t size) {
     new_metadata->size = remaining_size - sizeof(simple_metadata_t);
     new_metadata->next = NULL;
     // Add the remaining free slot to the free list.
-    simple_add_to_free_list(new_metadata);
+    my_add_to_free_list(new_metadata);
   }
   return ptr;
 }
@@ -303,7 +322,7 @@ void my_free(void* ptr) {
   //     metadata   ptr
   simple_metadata_t* metadata = (simple_metadata_t*)ptr - 1;
   // Add the free slot to the free list.
-  simple_add_to_free_list(metadata);
+  my_add_to_free_list(metadata);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
