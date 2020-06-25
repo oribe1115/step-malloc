@@ -216,15 +216,38 @@ void my_add_to_free_list(simple_metadata_t* metadata){
   simple_metadata_t* metadata_tail = (simple_metadata_t*)((char*)ptr + metadata->size);
 
   // 連結できないとき
-  if (metadata_tail != simple_heap.free_head){
-    metadata->next = simple_heap.free_head;
-    simple_heap.free_head = metadata;
-    return;
+  // if (metadata_tail != simple_heap.free_head){
+  //   metadata->next = simple_heap.free_head;
+  //   simple_heap.free_head = metadata;
+  //   return;
+  // }
+
+  // simple_metadata_t* head = simple_heap.free_head;
+  // metadata->size += head->size + sizeof(simple_metadata_t);
+  // metadata->next = head->next;
+  // simple_heap.free_head = metadata;
+
+  simple_metadata_t* prev = NULL;
+  simple_metadata_t* tmp = simple_heap.free_head;
+  while (tmp){
+    if (tmp == metadata_tail){
+      // printf("join: ");
+      metadata->size += tmp->size + sizeof(simple_metadata_t);
+      metadata->next = tmp->next;
+      if (prev == NULL){
+        simple_heap.free_head = metadata;
+        // printf("head\n");
+      } else {
+        prev->next = metadata;
+        // printf("insert\n");
+      }
+      return;
+    }
+    prev = tmp;
+    tmp = tmp->next;
   }
 
-  simple_metadata_t* head = simple_heap.free_head;
-  metadata->size += head->size + sizeof(simple_metadata_t);
-  metadata->next = head->next;
+  metadata->next = simple_heap.free_head;
   simple_heap.free_head = metadata;
 }
 
