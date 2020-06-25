@@ -212,29 +212,46 @@ void simple_free(void* ptr) {
 // simple_heap.free_headと連結できそうならする
 void my_add_to_free_list(simple_metadata_t* metadata){
   assert(!metadata->next);
-  
-  void* ptr = metadata + 1;
-  simple_metadata_t* metadata_tail = (simple_metadata_t*)((char*)ptr + metadata->size);
 
+  if (simple_heap.free_head == NULL){
+    metadata->next = simple_heap.free_head;
+    simple_heap.free_head = metadata;
+    return;
+  }
+  
+  // 挿入場所を探す
   simple_metadata_t* prev = NULL;
   simple_metadata_t* tmp = simple_heap.free_head;
-  while (tmp){
-    if (tmp == metadata_tail){
-      metadata->size += tmp->size + sizeof(simple_metadata_t);
-      metadata->next = tmp->next;
-      if (prev == NULL){
-        simple_heap.free_head = metadata;
-      } else {
-        prev->next = metadata;
-      }
-      return;
+  if (metadata < tmp) {
+    metadata->next = simple_heap.free_head;
+    simple_heap.free_head = metadata;
+    return;
+  }
+
+  while (tmp) {
+    if (prev < metadata && metadata < tmp){
+      break;
     }
+
     prev = tmp;
     tmp = tmp->next;
   }
 
-  metadata->next = simple_heap.free_head;
-  simple_heap.free_head = metadata;
+  if (!tmp) {
+    prev->next = metadata;
+    return;
+  }
+
+  void* ptr = metadata + 1;
+  simple_metadata_t* metadata_tail = (simple_metadata_t*)((char*)ptr + metadata->size);
+  if (metadata_tail == tmp) {
+    metadata->size += tmp->size + sizeof(simple_metadata_t);
+    metadata->next = tmp->next;
+    prev->next = metadata;
+  } else {
+    prev->next = metadata;
+    metadata->next = tmp;
+  }
 }
 
 // This is called only once at the beginning of each challenge.
