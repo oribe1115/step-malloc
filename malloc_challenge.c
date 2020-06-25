@@ -59,6 +59,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/time.h>
+#include <limits.h>
 
 void* mmap_from_system(size_t size);
 void munmap_to_system(void* ptr, size_t size);
@@ -222,11 +223,28 @@ void my_initialize() {
 void* my_malloc(size_t size) {
   simple_metadata_t* metadata = simple_heap.free_head;
   simple_metadata_t* prev = NULL;
-  // First-fit: Find the first free slot the object fits.
-  while (metadata && metadata->size < size) {
+  
+  // Best-fit
+  simple_metadata_t* best = NULL;
+  simple_metadata_t* best_prev = NULL;
+  unsigned long best_diff = ULONG_MAX;
+  while(metadata){
+    if (metadata->size >= size){
+      int diff = metadata->size - size;
+      if (diff < best_diff){
+        best =  metadata;
+        best_prev = prev;
+        best_diff = diff;
+      }
+      if (best_diff == size){
+        break;
+      }
+    }
     prev = metadata;
     metadata = metadata->next;
   }
+  metadata = best;
+  prev  = best_prev;
   
   if (!metadata) {
     // There was no free slot available. We need to request a new memory region
