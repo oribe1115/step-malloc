@@ -1,5 +1,5 @@
 build: 
-	gcc malloc_challenge.c -lm
+	clang malloc_challenge.c -lm
 
 test: a.out
 	./a.out
